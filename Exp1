@@ -1,0 +1,98 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+from sklearn import metrics
+from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay, accuracy_score, 
+                            precision_score, recall_score, f1_score, classification_report,
+                            precision_recall_curve, roc_curve, auc, roc_auc_score, 
+                            balanced_accuracy_score)
+from sklearn.tree import DecisionTreeClassifier
+
+df = pd.read_csv('"Z:\Applied Ai\heart.csv"')
+print("Dataset head:")
+print(df.head())
+print("\nDataset shape:", df.shape)
+
+print("\nData types:")
+print(df.dtypes)
+print("\nMissing values:")
+print(df.isnull().sum())
+
+X = df.drop(columns=['output'])
+y = df['output']
+
+print("\nFeatures:")
+print(X.head())
+print("Features shape:", X.shape)
+print("\nTarget:")
+print(y.head())
+print("Target shape:", y.shape)
+
+unique_values = np.unique(y)
+counts = np.zeros_like(unique_values)
+for i, value in enumerate(unique_values):
+    counts[i] = np.count_nonzero(y == value)
+    print(f"Class label: {value}, Count: {counts[i]}")
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+print("\nTraining features shape:", X_train.shape)
+print("Testing features shape:", X_test.shape)
+print("Training target shape:", y_train.shape)
+print("Testing target shape:", y_test.shape)
+
+unique_values_test = np.unique(y_test)
+counts_test = np.zeros_like(unique_values_test)
+for i, value in enumerate(unique_values_test):
+    counts_test[i] = np.count_nonzero(y_test == value)
+    print(f"Test set - Class label: {value}, Count: {counts_test[i]}")
+
+scaler = MinMaxScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+print("\nScaled training features (first 5 rows):")
+print(X_train_scaled[:5])
+
+dt_model = DecisionTreeClassifier(random_state=40)
+dt_model.fit(X_train_scaled, y_train)
+
+preds = dt_model.predict(X_test_scaled)
+
+classes = [0, 1]  # Assuming binary classification with labels 0 and 1
+cm = confusion_matrix(y_test, preds)
+print('\nConfusion Matrix:')
+print(cm)
+
+plt.figure(figsize=(5, 5))
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=classes)
+disp.plot()
+plt.title("Confusion Matrix")
+plt.show()
+
+accuracy = accuracy_score(y_test, preds)
+precision = precision_score(y_test, preds)
+recall = recall_score(y_test, preds)
+f1 = f1_score(y_test, preds)
+roc_auc = roc_auc_score(y_test, preds)
+
+print(f'Accuracy: {accuracy*100:.2f}%')
+print(f'Precision: {precision*100:.2f}%')
+print(f'Recall: {recall*100:.2f}%')
+print(f'F1 Score: {f1*100:.2f}%')
+print(f'ROC AUC score: {roc_auc:.3f}')
+
+fpr, tpr, thresholds = roc_curve(y_test, preds)
+roc_auc = auc(fpr, tpr)
+
+plt.figure(figsize=(8, 6))
+plt.plot([0, 1], [0, 1], 'k--', label='No Skill')
+plt.plot(fpr, tpr, label=f'AUC = {roc_auc:.3f}')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve')
+plt.legend(loc='best')
+plt.show()
+
+print("\nClassification Report:")
+print(classification_report(y_test, preds))
